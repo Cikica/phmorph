@@ -2,6 +2,28 @@
 
 	class morph_test extends PHPUnit_Framework_TestCase
 	{
+		public function test_key_value_loop ()
+		{
+			$this->assertEquals(
+				array(
+					'02s' => 'd04',
+					'12b' => 'some14'
+				),
+				morph::key_value_loop(array(
+					'subject' => array(
+						's' => 'd',
+						'b' => 'some'
+					),
+					'else_do' => function ( $loop ) { 
+						return array(
+							'key'   => "{$loop['index']}2{$loop['key']}",
+							'value' => "{$loop['value']}{$loop['index']}4"
+						);
+					}
+				))
+			);
+		}
+
 		public function test_get_value_of_nested_array ()
 		{
 			$this->assertEquals(

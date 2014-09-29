@@ -5,6 +5,89 @@
 */
 class morph
 {
+
+	static function key_value_loop ( $loop )
+	{
+
+		$key   = array_keys( $loop['subject'] );
+		$value = array_values( $loop['subject'] );
+
+		return morph::base_loop(array(
+			'length'  => count( $value ),
+			'index'   => 0,
+			'subject' => $key,
+			'map'     => array(
+				'key'   => array(),
+				'value' => array(),
+				'into'  => ( isset( $loop['into?'] ) ? $loop['into?'] : "" )
+			),
+			'is_done_when' => function ( $base_loop ) use ( $key ) { 
+				return ( $base_loop['index'] == count( $key ) );
+			},
+			'if_done'      => function ( $base_loop ) use ( $loop ) {
+
+				$key_value = array_combine( 
+					$base_loop['map']['key'],
+					$base_loop['map']['value']
+				);
+
+				if ( isset( $loop['if_done?'] ) ) {
+					$result = call_user_func(
+						$loop['if_done?'], 
+						array(
+							'key'       => $base_loop['map']['key'],
+							'value'     => $base_loop['map']['value'],
+							'into'      => $base_loop['map']['into'],
+							'key_value' => $key_value
+						)
+					);
+				}
+
+				if ( isset( $loop['into?'] ) ) {
+					$result = $base_loop['map']['into'];
+				}
+				
+				return ( isset( $result ) ? $result : $key_value );
+
+			},
+			'else_do'      => function ( $base_loop ) use ( $key, $value, $loop ) {
+
+				$given = call_user_func( 
+					$loop['else_do'],
+					array(
+						'key'   => $key[$base_loop['index']],
+						'value' => $value[$base_loop['index']],
+						'into'  => $base_loop['map']['into'],
+						'index' => $base_loop['index']
+					)
+				);
+
+				return array(
+					'length'       => $base_loop['length'],
+					'map'          => array(
+						'key'   => array_merge( 
+							$base_loop['map']['key'],
+							array(
+								( isset( $given['key'] ) ? $given['key'] : $base_loop['map']['key'] )
+							)
+						),
+						'value' => array_merge( 
+							$base_loop['map']['value'],
+							array(
+								( isset( $given['value'] ) ? $given['value'] : $base_loop['map']['value'] )
+							)
+						),
+						'into'  => ( isset( $given['into'] ) ? $given['into'] : $base_loop['map']['into'] )
+					),
+					'index'        => $base_loop['index'] + 1,
+					'is_done_when' => $base_loop['is_done_when'],
+					'if_done'      => $base_loop['if_done'],
+					'else_do'      => $base_loop['else_do']
+				);
+			}
+		));
+	}
+
 	static function get_value_of_nested_array ( $get )
 	{
 
@@ -88,7 +171,7 @@ class morph
 		if ( call_user_func( $loop['is_done_when'], $loop ) ) { 
 			return call_user_func( $loop['if_done'], $loop );
 		} else { 
-			return toolshed::base_loop( call_user_func( $loop['else_do'], $loop ) );
+			return morph::base_loop( call_user_func( $loop['else_do'], $loop ) );
 		}
 	}
 }
